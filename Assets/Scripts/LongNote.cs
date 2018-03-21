@@ -10,6 +10,8 @@ public class LongNote : BaseNote {
     float t2 = 0.17f;
     float t3 = 0.25f;
 
+    float sinx, cosx; // store sin(angle) to reduce calculation
+
     float currTime;
     bool isHeadComing = true;
     bool isPressing = false;
@@ -84,6 +86,8 @@ public class LongNote : BaseNote {
     void Start () {
         currTime = startTime;
         angle_rad = angle_deg * Mathf.Deg2Rad;
+        sinx = Mathf.Sin(angle_rad);
+        cosx = Mathf.Cos(angle_rad);
         tail.SetActive(false);
         lineRd = link.GetComponent<LineRenderer>();
         lineRd.positionCount = 2;
@@ -105,8 +109,8 @@ public class LongNote : BaseNote {
 
 		if (isHeadComing)
         {
-            head.transform.Translate(new Vector2(velocity * Time.deltaTime * Mathf.Cos(angle_rad),
-                velocity * Time.deltaTime * Mathf.Sin(angle_rad)));
+            head.transform.Translate(new Vector2(velocity * Time.deltaTime * cosx,
+                velocity * Time.deltaTime * sinx));
             lineRd.SetPosition(0, head.transform.position);
             if (currTime - headArriveTime > t3)
             {
@@ -116,8 +120,8 @@ public class LongNote : BaseNote {
 
         if (isTailShown && !isTailOver)
         {
-            tail.transform.Translate(new Vector2(velocity * Time.deltaTime * Mathf.Cos(angle_rad),
-                velocity * Time.deltaTime * Mathf.Sin(angle_rad)));
+            tail.transform.Translate(new Vector2(velocity * Time.deltaTime * cosx,
+                velocity * Time.deltaTime * sinx));
             lineRd.SetPosition(1, tail.transform.position);
             if (!isPressing && currTime > tailArriveTime - t3)
             {

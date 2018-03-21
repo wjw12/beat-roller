@@ -207,6 +207,10 @@ MonoBehaviour:
     type: 2}
   longNotePrefab: {fileID: 1509705415666830, guid: d3be37b0928b7294286e1be1dd222a61,
     type: 2}
+  snapPointPrefab: {fileID: 1456315086836846, guid: 262439980a9a5a949a52bc178ee5a566,
+    type: 2}
+  specialNotePrefab: {fileID: 1263251334284044, guid: f7494d4fd8bc0f7478db4fd001e1c3f9,
+    type: 2}
   flyTime: 1.5
 --- !u!1 &855124514
 GameObject:
@@ -268,7 +272,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &892157093
 Prefab:
@@ -307,7 +311,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 4185161255084734, guid: d3be37b0928b7294286e1be1dd222a61, type: 2}
       propertyPath: m_RootOrder
-      value: 6
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 1509705415666830, guid: d3be37b0928b7294286e1be1dd222a61, type: 2}
       propertyPath: m_Name
@@ -346,7 +350,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 5
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1156559285
 Prefab:
@@ -385,11 +389,11 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 4150377879536626, guid: ef5a3f84e0a679f4a8656e2b9b04e7bb, type: 2}
       propertyPath: m_RootOrder
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 1960513597567998, guid: ef5a3f84e0a679f4a8656e2b9b04e7bb, type: 2}
       propertyPath: m_Name
-      value: note-03
+      value: Single Note
       objectReference: {fileID: 0}
     - target: {fileID: 1960513597567998, guid: ef5a3f84e0a679f4a8656e2b9b04e7bb, type: 2}
       propertyPath: m_IsActive
@@ -484,7 +488,7 @@ RectTransform:
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}

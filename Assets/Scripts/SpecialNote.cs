@@ -2,44 +2,20 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SingleNote : BaseNote {
-
+public class SpecialNote : BaseNote {
     public float startTime, arriveTime;
 
-    float t1 = 0.08f;
-    float t2 = 0.15f;
     float t3 = 0.25f;
 
-    float currTime;
-    bool hasStopped = false;
+    float currTime, sinx, cosx;
     Animator anim;
-    float sinx, cosx; // store sin(angle) to reduce calculation
-
-    public override void TouchBegin(float t)
-    {
-        if (arriveTime - t > 2 * t3) return;
-        hasStopped = true;
-        float delta_t = Mathf.Abs(t - arriveTime);
-        if (delta_t < t1)
-        {
-            Perfect();
-        }
-        else if (delta_t < t2)
-        {
-            Good();
-        }
-        else if (delta_t < t3)
-        {
-            Fair();
-        }
-        else
-            Miss();
-    }
+    bool hasStopped = false;
 
 
-    // Use this for initialization
-    void Start () {
+	// Use this for initialization
+	void Start () {
         currTime = startTime;
+        //distanceFromOrigin = 0f;
         anim = GetComponent<Animator>();
         angle_rad = angle_deg * Mathf.Deg2Rad;
         sinx = Mathf.Sin(angle_rad);
@@ -48,11 +24,11 @@ public class SingleNote : BaseNote {
 	
 	// Update is called once per frame
 	void Update () {
-        // flying
-        if (!hasStopped)
+		if (!hasStopped)
         {
             transform.Translate(new Vector2(velocity * Time.deltaTime * cosx,
                 velocity * Time.deltaTime * sinx));
+            //distanceFromOrigin += velocity * Time.deltaTime;
 
             currTime += Time.deltaTime;
             if (currTime > arriveTime + t3)
@@ -62,30 +38,33 @@ public class SingleNote : BaseNote {
         }
 	}
 
-    void Perfect() {
-        Success();
-    }
 
-    void Good() {
-        Success();
-    }
-
-    void Fair() {
-        Success();
+    public override void TouchBegin(float t)
+    {
+        // this function is called when the special note is touched by SnapPoint
+        if (!hasStopped)
+        {
+            hasStopped = true;
+            Perfect();
+        }
     }
 
     void Miss()
     {
+        if (!hasStopped)
+        {
+            hasStopped = true;
+            Fail();
+        }
+    }
 
-        Fail();
+    void Perfect()
+    {
+        Success();
     }
 
     void Success()
     {
-        hasStopped = true;
-
-        Debug.Log("Success!");
-        // combo +1
 
         // animation
         anim.SetBool("Expand", true);
@@ -95,12 +74,9 @@ public class SingleNote : BaseNote {
 
     void Fail()
     {
-
         hasStopped = true;
 
         // combo restart
-
-        Debug.Log("Fail!");
 
         // fade animation
         anim.SetBool("Fade", true);
@@ -119,5 +95,4 @@ public class SingleNote : BaseNote {
     {
         FindObjectOfType<TouchRing>().NoteDie(this);
     }
-
 }

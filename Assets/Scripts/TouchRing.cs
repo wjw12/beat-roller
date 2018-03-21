@@ -26,27 +26,29 @@ public class TouchRing : MonoBehaviour {
     public int n_queues = 18;
     public GameObject singleNotePrefab;
     public GameObject longNotePrefab;
+    public GameObject snapPointPrefab;
+    public GameObject specialNotePrefab;
     
     public float flyTime = 1.3f;
-
-    Vector2 screenCenter;
+    
     bool isRotatable = false;
-    float pixelsPerUnit;
 
     float currTime = 0f;
     int idx = 0;
     int deg_perqueue, deg_offset;
     List<Queue<BaseNote>> queues;
     List<NoteDescriptor> musicScore;
+    List<SnapPoint> snapPoints;
+
+    Vector2 lastMousePosition = new Vector2(0, 0);
 
 	// Use this for initialization
 	void Start () {
         LoadMusicScore();
-        screenCenter = new Vector2(Screen.width / 2, Screen.height / 2);
-        pixelsPerUnit = screenCenter.y / screenRad;
         deg_perqueue = 360 / n_queues;
         deg_offset = deg_perqueue / 2;
 
+        snapPoints = new List<SnapPoint>();
         queues = new List<Queue<BaseNote>>();
         for (int i = 0; i < n_queues; i++)
             queues.Add(new Queue<BaseNote>());
@@ -72,27 +74,69 @@ public class TouchRing : MonoBehaviour {
 		
         foreach (var touch in Input.touches)
         {
-            HandleTouch(touch.position, touch.phase);
+            HandleTouch(touch);
         }
 
-        // for mouse input
+        // for mouse input, fake touch
+        Touch fakeTouch = new Touch();
         if (Input.GetMouseButtonDown(0))
         {
-            HandleTouch(Input.mousePosition, TouchPhase.Began);
+            fakeTouch.position = Input.mousePosition;
+            fakeTouch.phase = TouchPhase.Began;
+            HandleTouch(fakeTouch);
         }
-
-        if (Input.GetMouseButtonUp(0))
+        else if (Input.GetMouseButtonUp(0))
         {
-            HandleTouch(Input.mousePosition, TouchPhase.Ended);
+            fakeTouch.position = Input.mousePosition;
+            fakeTouch.phase = TouchPhase.Ended;
+            HandleTouch(fakeTouch);
         }
-	}
+        else if (Input.GetMouseButton(0))
+        {
+            fakeTouch.position = Input.mousePosition;
+            fakeTouch.phase = TouchPhase.Moved;
+            fakeTouch.deltaPosition = fakeTouch.position - lastMousePosition;
+            HandleTouch(fakeTouch);
+        }
 
-    void HandleTouch(Vector2 pos, TouchPhase phase)
+
+        lastMousePosition = Input.mousePosition;
+
+        if (isRotatable)
+        {
+            foreach (SnapPoint sp in snapPoints)
+            {
+                int center_deg = (Mathf.FloorToInt(Mathf.Atan2(sp.transform.position.y, sp.transform.position.x) * Mathf.Rad2Deg) + 360) % 360;
+                int q1 = ((center_deg + deg_offset + 360) % 360) / deg_perqueue;
+                int q2 = (center_deg + deg_offset) % deg_perqueue > deg_perqueue / 2 ? (q1 + 1 + n_queues) % n_queues : (q1 - 1 + n_queues) % n_queues;
+
+                BaseNote bn;
+                if (queues[q1].Count > 0)
+                {
+                    bn = queues[q1].Peek();
+                    if (bn != null && Vector2.Distance(bn.transform.position, sp.transform.position) < sp.radius * 1.5f)
+                        bn.TouchBegin(currTime);
+                }
+
+                if (queues[q2].Count > 0)
+                {
+                    bn = queues[q2].Peek();
+                    if (bn != null && Vector2.Distance(bn.transform.position, sp.transform.position) < sp.radius * 1.5f)
+                        bn.TouchBegin(currTime);
+                }
+            }
+        }
+        
+
+    }
+
+    void HandleTouch(Touch touch)
     {
-        float r = Vector2.Distance(pos, screenCenter) / pixelsPerUnit;
-        float x = (float)pos.x - screenCenter.x;
-        float y = (float)pos.y - screenCenter.y;
-        int deg = ((int)(Mathf.Atan2(y, x) * Mathf.Rad2Deg + deg_offset) + 360) % 360;
+        TouchPhase phase = touch.phase;
+        Vector2 wpos = Camera.main.ScreenToWorldPoint(touch.position);
+        Vector2 dwpos = Camera.main.ScreenToWorldPoint(touch.position) - Camera.main.ScreenToWorldPoint(touch.position - touch.deltaPosition);
+        float r = Vector2.Distance(wpos, Vector2.zero);
+        int deg = ((int)(Mathf.Atan2(wpos.y, wpos.x) * Mathf.Rad2Deg + deg_offset) + 360) % 360;
         BaseNote bn;
 
         if (!isRotatable)
@@ -122,7 +166,84 @@ public class TouchRing : MonoBehaviour {
                     }
                 }
             }
+        }
+        else
+        {
+            // the ring can be rotated if touching 1 or 2 snap points
             
+            if (snapPoints.Count == 1)
+            {
+                if (phase == TouchPhase.Began && !snapPoints[0].isSnapped)
+                {
+                    if (Vector2.Distance(snapPoints[0].transform.position, wpos) < snapPoints[0].radius)
+                    {
+                        snapPoints[0].SetSnap(true);
+                    }
+                }
+                else if (phase == TouchPhase.Moved && snapPoints[0].isSnapped)
+                {
+                    if (Vector2.Distance(snapPoints[0].transform.position, wpos) > snapPoints[0].detachRadius)
+                    {
+                        snapPoints[0].SetSnap(false);
+                    }
+
+                    // rotate the ring
+                    if (snapPoints[0].isSnapped)
+                    {
+                        transform.rotation *= Quaternion.FromToRotation(wpos - dwpos, wpos);
+                    }
+
+                }
+                else if (phase == TouchPhase.Ended && snapPoints[0].isSnapped)
+                {
+                    if (Vector2.Distance(snapPoints[0].transform.position, wpos) < snapPoints[0].detachRadius)
+                    {
+                        snapPoints[0].SetSnap(false);
+                    }
+                }
+            }
+            else if(snapPoints.Count == 2)
+            {
+                SnapPoint sp = null;
+                if (Vector2.Distance(snapPoints[0].transform.position, wpos) < snapPoints[0].detachRadius)
+                    sp = snapPoints[0];
+                if (Vector2.Distance(snapPoints[1].transform.position, wpos) < snapPoints[1].detachRadius)
+                    sp = snapPoints[1];
+
+                if (sp != null)
+                {
+                    if (phase == TouchPhase.Began && !sp.isSnapped)
+                    {
+                        if (Vector2.Distance(sp.transform.position, wpos) < sp.radius)
+                        {
+                            sp.SetSnap(true);
+                        }
+                    }
+                    else if (phase == TouchPhase.Moved && sp.isSnapped)
+                    {
+                        if (Vector2.Distance(sp.transform.position, wpos) > sp.detachRadius)
+                        {
+                            sp.SetSnap(false);
+                        }
+
+                        // rotate the ring
+                        if (sp.isSnapped)
+                        {
+                            transform.rotation *= Quaternion.FromToRotation(wpos - dwpos / 2, wpos);
+                        }
+
+                    }
+                    else if (phase == TouchPhase.Ended && snapPoints[0].isSnapped)
+                    {
+                        if (Vector2.Distance(sp.transform.position, wpos) < sp.detachRadius)
+                        {
+                            sp.SetSnap(false);
+                        }
+                    }
+                }
+            }
+            
+
         }
     }
 
@@ -137,7 +258,7 @@ public class TouchRing : MonoBehaviour {
         {
             case NoteType.Normal:
                 // create a normal note at the center
-                GameObject go = Instantiate(singleNotePrefab, transform) as GameObject;
+                GameObject go = Instantiate(singleNotePrefab) as GameObject;
                 SingleNote note = go.GetComponent<SingleNote>();
                 note.noteType = NoteType.Normal;
                 note.startTime = currTime;
@@ -147,7 +268,7 @@ public class TouchRing : MonoBehaviour {
                 queues[(int)n.angle_deg / deg_perqueue].Enqueue(note);
                 break;
             case NoteType.Long:
-                go = Instantiate(longNotePrefab, transform) as GameObject;
+                go = Instantiate(longNotePrefab) as GameObject;
                 LongNote ln = go.GetComponent<LongNote>();
                 ln.noteType = NoteType.Long;
                 ln.startTime = currTime;
@@ -157,23 +278,52 @@ public class TouchRing : MonoBehaviour {
                 ln.velocity = ringRad / flyTime;
                 queues[(int)n.angle_deg / deg_perqueue].Enqueue(ln);
                 break;
+            case NoteType.Rotate:
+                go = Instantiate(snapPointPrefab) as GameObject;
+                go.transform.position = new Vector2(ringRad * Mathf.Cos(n.angle_deg * Mathf.Deg2Rad), ringRad * Mathf.Sin(n.angle_deg * Mathf.Deg2Rad));
+                go.transform.parent = this.transform;
+                // save in a list
+                snapPoints.Add(go.GetComponent<SnapPoint>());
+                isRotatable = true;
+                break;
+            case NoteType.Special:
+                go = Instantiate(specialNotePrefab) as GameObject;
+                go.transform.parent = null;
+                SpecialNote sn = go.GetComponent<SpecialNote>();
+                sn.noteType = NoteType.Special;
+                sn.startTime = currTime;
+                sn.arriveTime = n.arriveTime;
+                sn.angle_deg = n.angle_deg;
+                sn.velocity = ringRad / flyTime;
+                queues[(int)n.angle_deg / deg_perqueue].Enqueue(sn);
+                break;
+            case NoteType.EndRotate:
+                isRotatable = false;
+                StartCoroutine(snapPoints[0].DieAfter(flyTime));
+                snapPoints.Remove(snapPoints[0]);
+                break;
             default:
                 break;
         }
         
     }
 
+   
+
     void LoadMusicScore()
     {
-        string fileName = "test2.txt";
+        //string fileName = "test.txt";
         musicScore = new List<NoteDescriptor>();
         
-        StreamReader file = new StreamReader(Application.dataPath + "/Resources/" + fileName);
-
-        string line;
+        //StreamReader file = new StreamReader(Application.dataPath + "/Resources/" + fileName);
+        
+        TextAsset t = Resources.Load("test") as TextAsset;
+        var arrayString = t.text.Split('\n');
         NoteDescriptor n;
-        while ((line = file.ReadLine()) != null)
+        foreach (var line in arrayString)
         {
+            if (line[0] == '#')
+                continue;
             string[] parts = line.Split(' ');
             switch (parts[0])
             {
@@ -204,7 +354,7 @@ public class TouchRing : MonoBehaviour {
 
         }
 
-        file.Close();
+        //file.Close();
         
     }
 }
