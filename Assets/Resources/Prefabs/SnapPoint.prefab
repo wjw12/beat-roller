@@ -70,8 +70,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 78cc6b7149f83b243bc7bf01c4ba7e1f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  radius: 0.6
-  detachRadius: 1
+  radius: 0.8
+  detachRadius: 1.5
   isSnapped: 0
 --- !u!212 &212401710045561510
 SpriteRenderer:
@@ -107,8 +107,8 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: bd835732dd9f3bb47925d60f8227643d, type: 3}
-  m_Color: {r: 0, g: 1, b: 0.7103448, a: 1}
+  m_Sprite: {fileID: 21300048, guid: c12b8fe6f8587ac499519404c58321e6, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
