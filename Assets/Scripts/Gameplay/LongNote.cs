@@ -4,11 +4,12 @@ using UnityEngine;
 
 public class LongNote : BaseNote {
     public float startTime, headArriveTime, tailArriveTime;
-    public GameObject head, tail, link;
+    public GameObject head, tail, link, petal;
+    public ParticleSystem ps;
 
     float t1 = 0.08f;
-    float t2 = 0.17f;
-    float t3 = 0.25f;
+    float t2 = 0.12f;
+    float t3 = 0.18f;
 
     float sinx, cosx; // store sin(angle) to reduce calculation
 
@@ -22,11 +23,19 @@ public class LongNote : BaseNote {
 
     LineRenderer lineRd;
 
+    Animator petalAnim;
     
     public override void TouchBegin(float t)
     {
         if (headArriveTime - t > 2 * t3) return;
         if (isTailOver || isReadyToFinish) return;
+
+        // touch animation begins
+        OpenPetal();
+        ps.gameObject.SetActive(true);
+        ps.Play();
+        ps.transform.up = Vector3.zero - ps.transform.position;
+
         if (!isTailOver)
         { 
             isPressing = true;
@@ -49,7 +58,6 @@ public class LongNote : BaseNote {
             else
                 MissHead();
         }
-        
     }
 
     public override void TouchEnd(float t)
@@ -58,17 +66,9 @@ public class LongNote : BaseNote {
         {
             isPressing = false;
             float delta_t = Mathf.Abs(t - tailArriveTime);
-            if (delta_t < t1 * 1.3f)
+            if (delta_t < t3)
             {
-                Perfect();
-            }
-            else if (delta_t < t2 * 1.3f)
-            {
-                Good();
-            }
-            else if (delta_t < t3 * 1.3f)
-            {
-                Fair();
+                TailSuccess();
             }
             else
             {
@@ -79,7 +79,27 @@ public class LongNote : BaseNote {
             {
                 StopCoroutine("CreateTailAfter");
             }
+
+            // animation stops
+            FadePetal();
+            ps.Stop();
         }
+    }
+
+    void OpenPetal()
+    {
+        petal.SetActive(true);
+        float radii = FindObjectOfType<TouchRing>().ringRad;
+        petal.transform.position = new Vector2(radii * cosx, radii * sinx);
+        //Animator anim = petal.GetComponent<Animator>();
+        //anim.SetFloat("SpeedMultiplier", (tailArriveTime - headArriveTime) / anim.GetFloat("OriginalDuration"));
+        //anim.Play("Petal Open", -1, (currTime - headArriveTime) / (tailArriveTime - headArriveTime));
+    }
+
+    void FadePetal()
+    {
+        petalAnim.speed = 1;
+        petalAnim.SetBool("Fade", true);
     }
 
     // Use this for initialization
@@ -95,12 +115,18 @@ public class LongNote : BaseNote {
         lineRd.SetPosition(1, Vector3.zero);
         head.transform.position = Vector2.zero;
         tail.transform.position = Vector2.zero;
+        petalAnim = petal.GetComponent<Animator>();
+        
+        ps.gameObject.SetActive(false);
 
         StartCoroutine(CreateTailAfter(tailArriveTime - headArriveTime));
     }
 	
 	// Update is called once per frame
 	void Update () {
+        if (head.gameObject != null && ps.gameObject != null)
+            ps.transform.position = head.transform.position;
+
         if (isHeadOver && isTailOver && !isReadyToFinish)
         {
             isReadyToFinish = true;
@@ -109,8 +135,11 @@ public class LongNote : BaseNote {
 
 		if (isHeadComing)
         {
-            head.transform.Translate(new Vector2(velocity * Time.deltaTime * cosx,
-                velocity * Time.deltaTime * sinx));
+            if (currTime <= headArriveTime)
+            {
+                head.transform.Translate(new Vector2(velocity * Time.deltaTime * cosx,
+                    velocity * Time.deltaTime * sinx));
+            }
             lineRd.SetPosition(0, head.transform.position);
             if (currTime - headArriveTime > t3)
             {
@@ -118,24 +147,35 @@ public class LongNote : BaseNote {
             }
         }
 
-        if (isTailShown && !isTailOver)
+        if (isTailShown)
         {
-            tail.transform.Translate(new Vector2(velocity * Time.deltaTime * cosx,
-                velocity * Time.deltaTime * sinx));
-            lineRd.SetPosition(1, tail.transform.position);
-            if (!isPressing && currTime > tailArriveTime - t3)
+            if (currTime <= tailArriveTime)
             {
-                MissTail();
+                tail.transform.Translate(new Vector2(velocity * Time.deltaTime * cosx,
+                    velocity * Time.deltaTime * sinx));
             }
-            if (isPressing && currTime > tailArriveTime + t3)
+            lineRd.SetPosition(1, tail.transform.position);
+            if (!isTailOver)
             {
-                isTailOver = true;
-                Fair();
+                if (!isPressing && currTime > tailArriveTime - t3)
+                {
+                    MissTail();
+                }
+                if (isPressing && currTime > tailArriveTime + t3)
+                {
+                    isTailOver = true;
+                    //Fair();
+                }
             }
         }
         if (isPressing)
         {
             // shining effect
+            if (petal.activeSelf && !petalAnim.GetBool("Fade"))
+            {
+                petalAnim.Play("Petal Open", -1, (currTime - headArriveTime) / (tailArriveTime - headArriveTime));
+                petalAnim.speed = 0;
+            }
         }
 
         currTime += Time.deltaTime;
@@ -153,11 +193,11 @@ public class LongNote : BaseNote {
     {
         if (!isHeadOver)
         {
-            Debug.Log("Head missed");
             isHeadOver = true;
             isHeadComing = false;
             head.GetComponent<Animator>().SetBool("Fade", true);
             StartCoroutine(DestroyAfter(head, t3));
+            FindObjectOfType<TouchRing>().MissHit(angle_rad);
         }
     }
 
@@ -165,32 +205,39 @@ public class LongNote : BaseNote {
     {
         if (isTailShown && !isTailOver)
         {
-            Debug.Log("Tail missed");
             isTailShown = false;
             isTailOver = true;
+            tail.GetComponent<Animator>().SetBool("Fade", true);
+            //FindObjectOfType<TouchRing>().MissHit(angle_rad);
+            FindObjectOfType<TouchRing>().InterruptCombo();
         }
+    }
+
+    void TailSuccess()
+    {
+        FindObjectOfType<TouchRing>().IncrementCombo();
     }
 
     void Perfect()
     {
         Success();
+        FindObjectOfType<TouchRing>().PerfectHit(angle_rad);
     }
 
     void Good()
     {
         Success();
+        FindObjectOfType<TouchRing>().GoodHit(angle_rad);
     }
 
     void Fair()
     {
         Success();
+        FindObjectOfType<TouchRing>().FairHit(angle_rad);
     }
 
     void Success()
     {
-        // combo +1
-        Debug.Log("long note success");
-        
         if (isHeadOver && !isTailOver)
         {
             isTailOver = true;
@@ -205,23 +252,27 @@ public class LongNote : BaseNote {
             head.GetComponent<Animator>().SetBool("Expand", true);
             StartCoroutine(DestroyAfter(head, t3));
         }
-
-        
         
     }
 
     IEnumerator FinishAfter(float t)
     {
-        if (tail != null)
-            tail.GetComponent<Animator>().SetBool("Fade", true);
-
-        // link fade animation
+        //if (tail != null)
+        //    tail.GetComponent<Animator>().SetBool("Fade", true);
+        if (petal.activeSelf)
+            FadePetal();
+        if (ps.gameObject.activeSelf)
+            ps.Stop();
+        
+        link.GetComponent<Animator>().SetBool("Fade", true);
 
         NotifyDeath();
         yield return new WaitForSeconds(t);
         StopAllCoroutines();
         Destroy(link);
         Destroy(tail);
+        Destroy(petal);
+        Destroy(ps.gameObject);
         Destroy(gameObject);
     }
 

@@ -5,7 +5,7 @@ using UnityEngine;
 public class SpecialNote : BaseNote {
     public float startTime, arriveTime;
 
-    float t3 = 0.25f;
+    float t3 = 0.15f;
 
     float currTime, sinx, cosx;
     Animator anim;
@@ -24,17 +24,16 @@ public class SpecialNote : BaseNote {
 	
 	// Update is called once per frame
 	void Update () {
-		if (!hasStopped)
+		if (!hasStopped && currTime < arriveTime)
         {
             transform.Translate(new Vector2(velocity * Time.deltaTime * cosx,
                 velocity * Time.deltaTime * sinx));
-            //distanceFromOrigin += velocity * Time.deltaTime;
+        }
+        currTime += Time.deltaTime;
 
-            currTime += Time.deltaTime;
-            if (currTime > arriveTime + t3)
-            {
-                Miss();
-            }
+        if (currTime > arriveTime + t3)
+        {
+            Miss();
         }
 	}
 
@@ -44,8 +43,8 @@ public class SpecialNote : BaseNote {
         // this function is called when the special note is touched by SnapPoint
         if (!hasStopped)
         {
-            hasStopped = true;
             Perfect();
+            hasStopped = true;
         }
     }
 
@@ -55,17 +54,18 @@ public class SpecialNote : BaseNote {
         {
             hasStopped = true;
             Fail();
+            FindObjectOfType<TouchRing>().MissHit(angle_rad);
         }
     }
 
     void Perfect()
     {
         Success();
+        FindObjectOfType<TouchRing>().PerfectHit(angle_rad);
     }
 
     void Success()
     {
-
         // animation
         anim.SetBool("Expand", true);
 
@@ -75,8 +75,6 @@ public class SpecialNote : BaseNote {
     void Fail()
     {
         hasStopped = true;
-
-        // combo restart
 
         // fade animation
         anim.SetBool("Fade", true);

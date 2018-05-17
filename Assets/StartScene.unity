@@ -339,7 +339,7 @@ GameObject:
   - component: {fileID: 1280798259}
   - component: {fileID: 1280798258}
   m_Layer: 0
-  m_Name: GameData
+  m_Name: MusicInfo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -353,9 +353,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1280798257}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 214900659fc56b94990d82d9ec66e559, type: 3}
+  m_Script: {fileID: 11500000, guid: 37c46bb88fffda345ad001d66172cb05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  musicScoreFileName: Rameses B - Flaklypa (-kevincela-) [Normal].csv
+  imageFileName: Rameses B - Russ EP (Free) - cover.jpg
+  musicFileName: Rameses B - Flaklypa.mp3
+  firstNoteTime: 12
 --- !u!4 &1280798259
 Transform:
   m_ObjectHideFlags: 0

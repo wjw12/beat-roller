@@ -19,43 +19,57 @@ public struct NoteDescriptor
 
 public class TouchRing : MonoBehaviour {
 
-    public float ringRad = 4.8f;
-    public float screenRad = 5.5f;
-    public float rmin = 4.7f;
-    public float rmax = 4.9f;
-    public int n_queues = 18;
+    public float ringRad;
+    public float screenRad;
+    public float textDisplayRad;
+    public float rmin;
+    public float rmax;
+    public int n_queues;
     public GameObject singleNotePrefab;
     public GameObject longNotePrefab;
-    public GameObject snapPointPrefab;
     public GameObject specialNotePrefab;
     
-    public float flyTime = 1.3f;
-    
-    bool isRotatable = false;
+    public float flyTime;
 
-    float currTime = 0f;
+    float currTime = -0.5f; // offset
     int idx = 0;
     int deg_perqueue, deg_offset;
     List<Queue<BaseNote>> queues;
     List<NoteDescriptor> musicScore;
-    List<SnapPoint> snapPoints;
 
     Vector2 lastMousePosition = new Vector2(0, 0);
 
-	// Use this for initialization
-	void Start () {
-        LoadMusicScore();
+    RingEmitParticles particleEmitter;
+    Animator ringAnim;
+    TextObjectPool pool;
+
+    bool hasStarted = false;
+
+    // Use this for initialization
+    void Start () {
         deg_perqueue = 360 / n_queues;
         deg_offset = deg_perqueue / 2;
-
-        snapPoints = new List<SnapPoint>();
+        
         queues = new List<Queue<BaseNote>>();
         for (int i = 0; i < n_queues; i++)
             queues.Add(new Queue<BaseNote>());
+
+        particleEmitter = GetComponent<RingEmitParticles>();
+        ringAnim = GetComponent<Animator>();
+        pool = FindObjectOfType<TextObjectPool>();
+        //LoadMusicScore("light 70s.csv");
+        //LoadBackgroundPic("Snowflake3_1280x720.jpg");
+        //LoadMusic("raja_ffm_-_the_light.mp3");
 	}
+
+    public void SetStart()
+    {
+        hasStarted = true;
+    }
 	
 	// Update is called once per frame
 	void Update () {
+        if (!hasStarted) return;
         currTime += Time.deltaTime;
 
         // generate notes
@@ -103,31 +117,6 @@ public class TouchRing : MonoBehaviour {
         lastMousePosition = Input.mousePosition;
 
 #endif
-
-        if (isRotatable)
-        {
-            foreach (SnapPoint sp in snapPoints)
-            {
-                int center_deg = (Mathf.FloorToInt(Mathf.Atan2(sp.transform.position.y, sp.transform.position.x) * Mathf.Rad2Deg) + 360) % 360;
-                int q1 = ((center_deg + deg_offset + 360) % 360) / deg_perqueue;
-                int q2 = (center_deg + deg_offset) % deg_perqueue > deg_perqueue / 2 ? (q1 + 1 + n_queues) % n_queues : (q1 - 1 + n_queues) % n_queues;
-
-                BaseNote bn;
-                if (queues[q1].Count > 0)
-                {
-                    bn = queues[q1].Peek();
-                    if (bn != null && Vector2.Distance(bn.transform.position, sp.transform.position) < sp.radius * 1.5f)
-                        bn.TouchBegin(currTime);
-                }
-
-                if (queues[q2].Count > 0)
-                {
-                    bn = queues[q2].Peek();
-                    if (bn != null && Vector2.Distance(bn.transform.position, sp.transform.position) < sp.radius * 1.5f)
-                        bn.TouchBegin(currTime);
-                }
-            }
-        }
         
 
     }
@@ -141,117 +130,105 @@ public class TouchRing : MonoBehaviour {
         int deg = ((int)(Mathf.Atan2(wpos.y, wpos.x) * Mathf.Rad2Deg + deg_offset) + 360) % 360;
         BaseNote bn;
 
-        if (!isRotatable)
+        
+        if (phase == TouchPhase.Began)
         {
-            if (phase == TouchPhase.Began)
+
+            if (r > rmin && r < rmax)
             {
-                
-                if (r > rmin && r < rmax)
-                {
-                    if (queues[deg / deg_perqueue].Count > 0) {
-                        bn = queues[deg / deg_perqueue].Peek();
-                        if (bn != null && (bn.noteType == NoteType.Normal || bn.noteType == NoteType.Long))
-                        {
-                            bn.TouchBegin(currTime);
-                        }
-                    }
-                }
-            }
-            else if (phase == TouchPhase.Ended)
-            {
+                particleEmitter.DoEmit();
+                ringAnim.Play("ring touched", -1, 0f);
+
                 if (queues[deg / deg_perqueue].Count > 0)
                 {
                     bn = queues[deg / deg_perqueue].Peek();
-                    if (bn != null && bn.noteType == NoteType.Long)
+                    if (bn != null && (bn.noteType == NoteType.Normal || bn.noteType == NoteType.Long))
                     {
-                        bn.TouchEnd(currTime);
+                        bn.TouchBegin(currTime);
                     }
                 }
             }
         }
-        else
+        else if (phase == TouchPhase.Ended)
         {
-            // the ring can be rotated if touching 1 or 2 snap points
-            
-            if (snapPoints.Count == 1)
+            if (queues[deg / deg_perqueue].Count > 0)
             {
-                if (phase == TouchPhase.Began && !snapPoints[0].isSnapped)
+                bn = queues[deg / deg_perqueue].Peek();
+                if (bn != null && bn.noteType == NoteType.Long)
                 {
-                    if (Vector2.Distance(snapPoints[0].transform.position, wpos) < snapPoints[0].radius)
-                    {
-                        snapPoints[0].SetSnap(true);
-                    }
-                }
-                else if (phase == TouchPhase.Moved && snapPoints[0].isSnapped)
-                {
-                    if (Vector2.Distance(snapPoints[0].transform.position, wpos) > snapPoints[0].detachRadius)
-                    {
-                        snapPoints[0].SetSnap(false);
-                    }
-
-                    // rotate the ring
-                    if (snapPoints[0].isSnapped)
-                    {
-                        transform.rotation *= Quaternion.FromToRotation(wpos - dwpos, wpos);
-                    }
-
-                }
-                else if (phase == TouchPhase.Ended && snapPoints[0].isSnapped)
-                {
-                    if (Vector2.Distance(snapPoints[0].transform.position, wpos) < snapPoints[0].detachRadius)
-                    {
-                        snapPoints[0].SetSnap(false);
-                    }
+                    bn.TouchEnd(currTime);
                 }
             }
-            else if(snapPoints.Count == 2)
-            {
-                SnapPoint sp = null;
-                if (Vector2.Distance(snapPoints[0].transform.position, wpos) < snapPoints[0].detachRadius)
-                    sp = snapPoints[0];
-                if (Vector2.Distance(snapPoints[1].transform.position, wpos) < snapPoints[1].detachRadius)
-                    sp = snapPoints[1];
-
-                if (sp != null)
-                {
-                    if (phase == TouchPhase.Began && !sp.isSnapped)
-                    {
-                        if (Vector2.Distance(sp.transform.position, wpos) < sp.radius)
-                        {
-                            sp.SetSnap(true);
-                        }
-                    }
-                    else if (phase == TouchPhase.Moved && sp.isSnapped)
-                    {
-                        if (Vector2.Distance(sp.transform.position, wpos) > sp.detachRadius)
-                        {
-                            sp.SetSnap(false);
-                        }
-
-                        // rotate the ring
-                        if (sp.isSnapped)
-                        {
-                            transform.rotation *= Quaternion.FromToRotation(wpos - dwpos / 2, wpos);
-                        }
-
-                    }
-                    else if (phase == TouchPhase.Ended && snapPoints[0].isSnapped)
-                    {
-                        if (Vector2.Distance(sp.transform.position, wpos) < sp.detachRadius)
-                        {
-                            sp.SetSnap(false);
-                        }
-                    }
-                }
-            }
-            
-
         }
+        else if (phase == TouchPhase.Stationary || phase == TouchPhase.Moved)
+        {
+            if (queues[deg / deg_perqueue].Count > 0)
+            {
+                bn = queues[deg / deg_perqueue].Peek();
+                if (bn != null && bn.noteType == NoteType.Special)
+                {
+                    if (currTime >= bn.time)
+                        bn.TouchBegin(currTime);
+                }
+            }
+        }
+        
     }
 
     public void NoteDie(BaseNote note)
     {
         queues[(int)note.angle_deg / deg_perqueue].Dequeue();
+    }
+
+    public void PerfectHit(float angle_rad)
+    {
+        GameObject go = pool.GetText("perfect");
+        PlaceText(go, angle_rad);
+    }
+
+    public void GoodHit(float angle_rad)
+    {
+        GameObject go = pool.GetText("good");
+        PlaceText(go, angle_rad);
+    }
+
+    public void FairHit(float angle_rad)
+    {
+        GameObject go = pool.GetText("fair");
+        PlaceText(go, angle_rad);
+    }
+
+    public void MissHit(float angle_rad)
+    {
+        GameObject go = pool.GetText("miss");
+        PlaceText(go, angle_rad);
+
+        InterruptCombo();
+    }
+
+    public void InterruptCombo()
+    {
+
+    }
+
+    public void IncrementCombo()
+    {
+
+    }
+
+    void PlaceText(GameObject go, float angle_rad)
+    {
+        go.transform.position = new Vector2(textDisplayRad * Mathf.Cos(angle_rad),
+            textDisplayRad * Mathf.Sin(angle_rad));
+        go.transform.Rotate(Vector3.forward * (Mathf.Rad2Deg * angle_rad - 90));
+        go.GetComponent<Animator>().Play("ExpandAndFade", -1, 0);
+        StartCoroutine(DistroyTextAfter(go, 0.2f));
+    }
+
+    IEnumerator DistroyTextAfter(GameObject go, float t)
+    {
+        yield return new WaitForSeconds(t);
+        pool.DestroyTextObject(go);
     }
 
     void CreateNote(NoteDescriptor n)
@@ -267,6 +244,7 @@ public class TouchRing : MonoBehaviour {
                 note.arriveTime = n.arriveTime;
                 note.angle_deg = n.angle_deg;
                 note.velocity = ringRad / flyTime;
+                note.time = n.arriveTime;
                 queues[(int)n.angle_deg / deg_perqueue].Enqueue(note);
                 break;
             case NoteType.Long:
@@ -278,15 +256,8 @@ public class TouchRing : MonoBehaviour {
                 ln.tailArriveTime = n.endTime;
                 ln.angle_deg = n.angle_deg;
                 ln.velocity = ringRad / flyTime;
+                ln.time = n.arriveTime;
                 queues[(int)n.angle_deg / deg_perqueue].Enqueue(ln);
-                break;
-            case NoteType.Rotate:
-                go = Instantiate(snapPointPrefab) as GameObject;
-                go.transform.position = new Vector2(ringRad * Mathf.Cos(n.angle_deg * Mathf.Deg2Rad), ringRad * Mathf.Sin(n.angle_deg * Mathf.Deg2Rad));
-                go.transform.parent = this.transform;
-                // save in a list
-                snapPoints.Add(go.GetComponent<SnapPoint>());
-                isRotatable = true;
                 break;
             case NoteType.Special:
                 go = Instantiate(specialNotePrefab) as GameObject;
@@ -297,12 +268,8 @@ public class TouchRing : MonoBehaviour {
                 sn.arriveTime = n.arriveTime;
                 sn.angle_deg = n.angle_deg;
                 sn.velocity = ringRad / flyTime;
+                sn.time = n.arriveTime;
                 queues[(int)n.angle_deg / deg_perqueue].Enqueue(sn);
-                break;
-            case NoteType.EndRotate:
-                isRotatable = false;
-                StartCoroutine(snapPoints[0].DieAfter(flyTime));
-                snapPoints.Remove(snapPoints[0]);
                 break;
             default:
                 break;
@@ -310,23 +277,28 @@ public class TouchRing : MonoBehaviour {
         
     }
 
-   
-
-    void LoadMusicScore()
+    public void SeekTo(float t)
     {
-        //string fileName = "test.txt";
+        currTime = t;
+    }
+    
+    public void LoadMusicScore(string path)
+    {
         musicScore = new List<NoteDescriptor>();
-        
-        //StreamReader file = new StreamReader(Application.dataPath + "/Resources/" + fileName);
-        
-        TextAsset t = Resources.Load("test") as TextAsset;
-        var arrayString = t.text.Split('\n');
+
+        StreamReader file = new StreamReader(Application.persistentDataPath + "/" + path);
+
+        //TextAsset t = Resources.Load(path) as TextAsset;
+        //var arrayString = t.text.Split('\n');
+
         NoteDescriptor n;
-        foreach (var line in arrayString)
+        //foreach (var line in arrayString)
+        string line = file.ReadLine();
+        while (line != null)
         {
             if (line[0] == '#')
                 continue;
-            string[] parts = line.Split(' ');
+            string[] parts = line.Split(',');
             switch (parts[0])
             {
                 case "N":
@@ -354,9 +326,11 @@ public class TouchRing : MonoBehaviour {
                     break;
             }
 
+            line = file.ReadLine();
         }
 
-        //file.Close();
+        file.Close();
         
     }
 }
+

@@ -7,18 +7,18 @@ public class SingleNote : BaseNote {
     public float startTime, arriveTime;
 
     float t1 = 0.08f;
-    float t2 = 0.15f;
-    float t3 = 0.25f;
+    float t2 = 0.12f;
+    float t3 = 0.18f;
 
     float currTime;
     bool hasStopped = false;
+    //bool isFade = false;
     Animator anim;
     float sinx, cosx; // store sin(angle) to reduce calculation
 
     public override void TouchBegin(float t)
     {
-        if (arriveTime - t > 2 * t3) return;
-        hasStopped = true;
+        if (arriveTime - t > 1.5f * t3) return;
         float delta_t = Mathf.Abs(t - arriveTime);
         if (delta_t < t1)
         {
@@ -34,6 +34,7 @@ public class SingleNote : BaseNote {
         }
         else
             Miss();
+        hasStopped = true;
     }
 
 
@@ -49,43 +50,53 @@ public class SingleNote : BaseNote {
 	// Update is called once per frame
 	void Update () {
         // flying
-        if (!hasStopped)
+
+        //if (currTime > arriveTime && !isFade)
+        //{
+        //    isFade = true;
+        //    anim.SetBool("Fade", true);
+        //}
+        if (!hasStopped && currTime < arriveTime)
         {
             transform.Translate(new Vector2(velocity * Time.deltaTime * cosx,
                 velocity * Time.deltaTime * sinx));
+        }
 
-            currTime += Time.deltaTime;
-            if (currTime > arriveTime + t3)
-            {
-                Miss();
-            }
+        currTime += Time.deltaTime;
+
+        if (currTime > arriveTime + t2)
+        {
+            Miss();
         }
 	}
 
     void Perfect() {
         Success();
+        FindObjectOfType<TouchRing>().PerfectHit(angle_rad);
     }
 
     void Good() {
         Success();
+        FindObjectOfType<TouchRing>().GoodHit(angle_rad);
     }
 
     void Fair() {
         Success();
+        FindObjectOfType<TouchRing>().FairHit(angle_rad);
     }
 
     void Miss()
     {
-
-        Fail();
+        if (!hasStopped)
+        {
+            Fail();
+            FindObjectOfType<TouchRing>().MissHit(angle_rad);
+        }
     }
 
     void Success()
     {
         hasStopped = true;
-
-        Debug.Log("Success!");
-        // combo +1
 
         // animation
         anim.SetBool("Expand", true);
@@ -97,14 +108,10 @@ public class SingleNote : BaseNote {
     {
 
         hasStopped = true;
-
-        // combo restart
-
-        Debug.Log("Fail!");
-
-        // fade animation
         anim.SetBool("Fade", true);
 
+        // combo restart
+        
         StartCoroutine(DieAfter(t3));
     }
 
