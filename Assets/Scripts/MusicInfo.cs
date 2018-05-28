@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class MusicInfo : MonoBehaviour {
-    public string musicScoreFileName;
-    public string imageFileName;
-    public string musicFileName;
-    public float firstNoteTime;
+    // we shall use like file = new StreamReader(xxxPath);
+    public string musicScorePath;
+    public string imagePath;
+    public string musicPath;
+    public string musicName; // this is music name, not filename
+    public int difficulty;
 
 	// Use this for initialization
 	void Start () {

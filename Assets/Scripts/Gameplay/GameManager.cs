@@ -8,7 +8,6 @@ public class GameManager : MonoBehaviour {
     public SpriteRenderer backgroundImage;
 
     TouchRing touchRing;
-    float firstNoteTime;
     float skipTime;
     float currTime = 0f;
     bool hasSkipped = false;
@@ -20,15 +19,14 @@ public class GameManager : MonoBehaviour {
         Application.targetFrameRate = 100;
         touchRing = FindObjectOfType<TouchRing>();
         MusicInfo minfo = FindObjectOfType<MusicInfo>();
-        firstNoteTime = minfo.firstNoteTime;
-        touchRing.LoadMusicScore(minfo.musicScoreFileName);
-        LoadBackgroundPic(minfo.imageFileName);
+        touchRing.LoadMusicScore(minfo.musicPath);
+        LoadBackgroundPic(minfo.imagePath);
 #if UNITY_EDITOR
-        LoadMusic(minfo.musicFileName);
+        LoadMusic(minfo.musicPath);
 #else
         LoadMusicAsync(minfo.musicFileName);
 #endif
-        skipTime = firstNoteTime * 0.8f;
+        skipTime = touchRing.GetFirstNoteTime() * 0.8f;
         Destroy(minfo.gameObject);
 	}
 	
@@ -48,6 +46,45 @@ public class GameManager : MonoBehaviour {
         currTime = skipTime;
         ANAMusic.seekTo(musicID, Mathf.RoundToInt(skipTime * 1000f));
         touchRing.SeekTo(currTime);
+        hasSkipped = true;
+        skipButton.SetActive(false);
+    }
+
+    // pause or resume game
+    public void Pause(bool pause)
+    {
+        if (pause)
+        {
+            Time.timeScale = 0f;
+            ANAMusic.pause(musicID);
+        }
+        else
+        {
+            // resume
+            Time.timeScale = 1f;
+            ANAMusic.play(musicID);
+        }
+    }
+
+
+    // stop game and return to Local List scene
+    public void Exit()
+    {
+        ANAMusic.pause(musicID);
+        ANAMusic.release(musicID);
+
+        // load scene
+    }
+
+    // normal finish
+    public void FinishGame()
+    {
+        ANAMusic.pause(musicID);
+        ANAMusic.release(musicID);
+
+        // show statistics
+
+        // upload score
     }
 
     void LoadMusic(string path)

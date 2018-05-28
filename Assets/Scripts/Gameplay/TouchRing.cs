@@ -332,5 +332,10 @@ public class TouchRing : MonoBehaviour {
         file.Close();
         
     }
+
+    public float GetFirstNoteTime()
+    {
+        return musicScore[0].arriveTime;
+    }
 }
 
