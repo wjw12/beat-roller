@@ -19,7 +19,7 @@ public class GameManager : MonoBehaviour {
         Application.targetFrameRate = 100;
         touchRing = FindObjectOfType<TouchRing>();
         MusicInfo minfo = FindObjectOfType<MusicInfo>();
-        touchRing.LoadMusicScore(minfo.musicPath);
+        touchRing.LoadMusicMap(minfo.mapPath);
         LoadBackgroundPic(minfo.imagePath);
 #if UNITY_EDITOR
         LoadMusic(minfo.musicPath);
@@ -74,6 +74,7 @@ public class GameManager : MonoBehaviour {
         ANAMusic.release(musicID);
 
         // load scene
+        Application.LoadLevel("StartScene");                                                                  
     }
 
     // normal finish
@@ -104,6 +105,7 @@ public class GameManager : MonoBehaviour {
     void LoadBackgroundPic(string path)
     {
         Sprite sp = IMG2Sprite.instance.LoadNewSprite(Application.persistentDataPath + "/" + path);
+        if (sp == null) return;
         backgroundImage.sprite = sp;
 
         float cameraHeight = Camera.main.orthographicSize * 2;

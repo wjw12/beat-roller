@@ -35,7 +35,7 @@ public class TouchRing : MonoBehaviour {
     int idx = 0;
     int deg_perqueue, deg_offset;
     List<Queue<BaseNote>> queues;
-    List<NoteDescriptor> musicScore;
+    List<NoteDescriptor> musicMap;
 
     Vector2 lastMousePosition = new Vector2(0, 0);
 
@@ -73,14 +73,14 @@ public class TouchRing : MonoBehaviour {
         currTime += Time.deltaTime;
 
         // generate notes
-        if (idx < musicScore.Count && currTime > musicScore[idx].arriveTime - flyTime)
+        if (idx < musicMap.Count && currTime > musicMap[idx].arriveTime - flyTime)
         {
             // instantiate
-            CreateNote(musicScore[idx]);
+            CreateNote(musicMap[idx]);
             ++idx;
-            if (idx < musicScore.Count && currTime > musicScore[idx].arriveTime - flyTime)
+            if (idx < musicMap.Count && currTime > musicMap[idx].arriveTime - flyTime)
             {
-                CreateNote(musicScore[idx]);
+                CreateNote(musicMap[idx]);
                 ++idx;
             }
         } 
@@ -282,9 +282,9 @@ public class TouchRing : MonoBehaviour {
         currTime = t;
     }
     
-    public void LoadMusicScore(string path)
+    public void LoadMusicMap(string path)
     {
-        musicScore = new List<NoteDescriptor>();
+        musicMap = new List<NoteDescriptor>();
 
         StreamReader file = new StreamReader(Application.persistentDataPath + "/" + path);
 
@@ -303,23 +303,23 @@ public class TouchRing : MonoBehaviour {
             {
                 case "N":
                     n = new NoteDescriptor(NoteType.Normal, float.Parse(parts[1]), float.Parse(parts[2]));
-                    musicScore.Add(n);
+                    musicMap.Add(n);
                     break;
                 case "R":
                     n = new NoteDescriptor(NoteType.Rotate, float.Parse(parts[1]), float.Parse(parts[2]));
-                    musicScore.Add(n);
+                    musicMap.Add(n);
                     break;
                 case "L":
                     n = new NoteDescriptor(NoteType.Long, float.Parse(parts[1]), float.Parse(parts[2]), float.Parse(parts[3]));
-                    musicScore.Add(n);
+                    musicMap.Add(n);
                     break;
                 case "S":
                     n = new NoteDescriptor(NoteType.Special, float.Parse(parts[1]), float.Parse(parts[2]));
-                    musicScore.Add(n);
+                    musicMap.Add(n);
                     break;
                 case "X":
                     n = new NoteDescriptor(NoteType.EndRotate, float.Parse(parts[1]));
-                    musicScore.Add(n);
+                    musicMap.Add(n);
                     break;
                 default:
                     Debug.LogError("Unrecognized note description.");
@@ -335,7 +335,7 @@ public class TouchRing : MonoBehaviour {
 
     public float GetFirstNoteTime()
     {
-        return musicScore[0].arriveTime;
+        return musicMap[0].arriveTime;
     }
 }
 
