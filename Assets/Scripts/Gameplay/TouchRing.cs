@@ -42,6 +42,8 @@ public class TouchRing : MonoBehaviour {
     RingEmitParticles particleEmitter;
     Animator ringAnim;
     TextObjectPool pool;
+    
+    ScoreRecorder scoreRecorder;
 
     bool hasStarted = false;
 
@@ -57,10 +59,11 @@ public class TouchRing : MonoBehaviour {
         particleEmitter = GetComponent<RingEmitParticles>();
         ringAnim = GetComponent<Animator>();
         pool = FindObjectOfType<TextObjectPool>();
+        scoreRecorder = FindObjectOfType<ScoreRecorder>();
         //LoadMusicScore("light 70s.csv");
         //LoadBackgroundPic("Snowflake3_1280x720.jpg");
         //LoadMusic("raja_ffm_-_the_light.mp3");
-	}
+    }
 
     public void SetStart()
     {
@@ -184,18 +187,21 @@ public class TouchRing : MonoBehaviour {
     {
         GameObject go = pool.GetText("perfect");
         PlaceText(go, angle_rad);
+        scoreRecorder.Perfect();
     }
 
     public void GoodHit(float angle_rad)
     {
         GameObject go = pool.GetText("good");
         PlaceText(go, angle_rad);
+        scoreRecorder.Good();
     }
 
     public void FairHit(float angle_rad)
     {
         GameObject go = pool.GetText("fair");
         PlaceText(go, angle_rad);
+        scoreRecorder.Fair();
     }
 
     public void MissHit(float angle_rad)
@@ -203,18 +209,9 @@ public class TouchRing : MonoBehaviour {
         GameObject go = pool.GetText("miss");
         PlaceText(go, angle_rad);
 
-        InterruptCombo();
+        scoreRecorder.InterruptCombo();
     }
 
-    public void InterruptCombo()
-    {
-
-    }
-
-    public void IncrementCombo()
-    {
-
-    }
 
     void PlaceText(GameObject go, float angle_rad)
     {

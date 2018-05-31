@@ -72,16 +72,19 @@ public class SingleNote : BaseNote {
 
     void Perfect() {
         Success();
+        anim.SetBool("Perfect Expand", true);
         FindObjectOfType<TouchRing>().PerfectHit(angle_rad);
     }
 
     void Good() {
         Success();
+        anim.SetBool("Normal Expand", true);
         FindObjectOfType<TouchRing>().GoodHit(angle_rad);
     }
 
     void Fair() {
         Success();
+        anim.SetBool("Normal Expand", true);
         FindObjectOfType<TouchRing>().FairHit(angle_rad);
     }
 
@@ -97,9 +100,7 @@ public class SingleNote : BaseNote {
     void Success()
     {
         hasStopped = true;
-
-        // animation
-        anim.SetBool("Expand", true);
+        
 
         StartCoroutine(DieAfter(t3));
     }

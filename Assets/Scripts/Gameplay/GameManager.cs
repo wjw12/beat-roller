@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System;
 using UnityEngine;
 
-public class GameManager : MonoBehaviour {
+public class GameManager : Singleton<GameManager> {
     public GameObject skipButton;
     public SpriteRenderer backgroundImage;
 
@@ -24,7 +24,7 @@ public class GameManager : MonoBehaviour {
 #if UNITY_EDITOR
         LoadMusic(minfo.musicPath);
 #else
-        LoadMusicAsync(minfo.musicFileName);
+        LoadMusicAsync(minfo.musicPath);
 #endif
         skipTime = touchRing.GetFirstNoteTime() * 0.8f;
         Destroy(minfo.gameObject);
@@ -33,6 +33,7 @@ public class GameManager : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
         if (!hasStarted) return;
+        if (Mathf.FloorToInt(currTime * 1000f) >= ANAMusic.getDuration(musicID)) FinishGame();
         currTime += Time.deltaTime;
         if (!hasSkipped && currTime >= skipTime)
         {
@@ -84,6 +85,7 @@ public class GameManager : MonoBehaviour {
         ANAMusic.release(musicID);
 
         // show statistics
+        FindObjectOfType<ScoreRecorder>().ShowStatistics();
 
         // upload score
     }

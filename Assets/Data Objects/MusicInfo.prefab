@@ -51,8 +51,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37c46bb88fffda345ad001d66172cb05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapPath: Rostik - Liquid (Paul Rosenthal Remix) (Charles445) [Hard].csv
+  mapPath: I.csv
   imagePath: Snowflake3_1280x720.jpg
-  musicPath: Rostik - Liquid (Paul Rosenthal Remix).mp3
+  musicPath: I.mp3
   musicName: Rostik - Liquid (Paul Rosenthal Remix)
-  difficulty: 7
+  difficulty: 10

@@ -4,12 +4,15 @@ using UnityEngine;
 
 public class LongNote : BaseNote {
     public float startTime, headArriveTime, tailArriveTime;
-    public GameObject head, tail, link, petal;
+    public GameObject head, tail, link;//, petal;
     public ParticleSystem ps;
 
     float t1 = 0.08f;
     float t2 = 0.12f;
     float t3 = 0.18f;
+
+    float combo_dt = 0.2f;
+    float combo_timer = 0f;
 
     float sinx, cosx; // store sin(angle) to reduce calculation
 
@@ -21,9 +24,11 @@ public class LongNote : BaseNote {
     bool isTailOver = false;
     bool isReadyToFinish = false;
 
-    LineRenderer lineRd;
+    ChainLightning lightning;
 
-    Animator petalAnim;
+    ScoreRecorder scoreRecorder;
+
+    //Animator petalAnim;
     
     public override void TouchBegin(float t)
     {
@@ -31,7 +36,7 @@ public class LongNote : BaseNote {
         if (isTailOver || isReadyToFinish) return;
 
         // touch animation begins
-        OpenPetal();
+        //OpenPetal();
         ps.gameObject.SetActive(true);
         ps.Play();
         ps.transform.up = Vector3.zero - ps.transform.position;
@@ -81,11 +86,12 @@ public class LongNote : BaseNote {
             }
 
             // animation stops
-            FadePetal();
+            //FadePetal();
             ps.Stop();
         }
     }
 
+    /*
     void OpenPetal()
     {
         petal.SetActive(true);
@@ -101,6 +107,7 @@ public class LongNote : BaseNote {
         petalAnim.speed = 1;
         petalAnim.SetBool("Fade", true);
     }
+    */
 
     // Use this for initialization
     void Start () {
@@ -109,13 +116,13 @@ public class LongNote : BaseNote {
         sinx = Mathf.Sin(angle_rad);
         cosx = Mathf.Cos(angle_rad);
         tail.SetActive(false);
-        lineRd = link.GetComponent<LineRenderer>();
-        lineRd.positionCount = 2;
-        lineRd.SetPosition(0, Vector3.zero);
-        lineRd.SetPosition(1, Vector3.zero);
+        lightning = link.GetComponent<ChainLightning>();
+        lightning.SetLineStart(0f, 0f);
+        lightning.SetLineEnd(0f, 0f);
         head.transform.position = Vector2.zero;
         tail.transform.position = Vector2.zero;
-        petalAnim = petal.GetComponent<Animator>();
+        scoreRecorder = FindObjectOfType<ScoreRecorder>();
+        //petalAnim = petal.GetComponent<Animator>();
         
         ps.gameObject.SetActive(false);
 
@@ -140,7 +147,7 @@ public class LongNote : BaseNote {
                 head.transform.Translate(new Vector2(velocity * Time.deltaTime * cosx,
                     velocity * Time.deltaTime * sinx));
             }
-            lineRd.SetPosition(0, head.transform.position);
+            lightning.SetLineStart(head.transform.position.x, head.transform.position.y);
             if (currTime - headArriveTime > t3)
             {
                 MissHead();
@@ -154,7 +161,7 @@ public class LongNote : BaseNote {
                 tail.transform.Translate(new Vector2(velocity * Time.deltaTime * cosx,
                     velocity * Time.deltaTime * sinx));
             }
-            lineRd.SetPosition(1, tail.transform.position);
+            lightning.SetLineEnd(tail.transform.position.x, tail.transform.position.y);
             if (!isTailOver)
             {
                 if (!isPressing && currTime > tailArriveTime - t3)
@@ -168,6 +175,18 @@ public class LongNote : BaseNote {
                 }
             }
         }
+
+        if (!isReadyToFinish)
+        {
+            combo_timer += Time.deltaTime;
+            if (combo_timer >= combo_dt)
+            {
+                combo_timer = 0f;
+                if (isPressing) scoreRecorder.IncrementCombo();
+                else scoreRecorder.InterruptCombo();
+            }
+        }
+        /*
         if (isPressing)
         {
             // shining effect
@@ -177,6 +196,7 @@ public class LongNote : BaseNote {
                 petalAnim.speed = 0;
             }
         }
+        */
 
         currTime += Time.deltaTime;
 	}
@@ -198,6 +218,7 @@ public class LongNote : BaseNote {
             head.GetComponent<Animator>().SetBool("Fade", true);
             StartCoroutine(DestroyAfter(head, t3));
             FindObjectOfType<TouchRing>().MissHit(angle_rad);
+            scoreRecorder.Miss();
         }
     }
 
@@ -209,13 +230,13 @@ public class LongNote : BaseNote {
             isTailOver = true;
             tail.GetComponent<Animator>().SetBool("Fade", true);
             //FindObjectOfType<TouchRing>().MissHit(angle_rad);
-            FindObjectOfType<TouchRing>().InterruptCombo();
+            //FindObjectOfType<ScoreRecorder>().InterruptCombo();
         }
     }
 
     void TailSuccess()
     {
-        FindObjectOfType<TouchRing>().IncrementCombo();
+        //FindObjectOfType<ScoreRecorder>().IncrementCombo();
     }
 
     void Perfect()
@@ -259,19 +280,19 @@ public class LongNote : BaseNote {
     {
         //if (tail != null)
         //    tail.GetComponent<Animator>().SetBool("Fade", true);
-        if (petal.activeSelf)
-            FadePetal();
+        //if (petal.activeSelf)
+        //    FadePetal();
         if (ps.gameObject.activeSelf)
             ps.Stop();
-        
-        link.GetComponent<Animator>().SetBool("Fade", true);
+
+        lightning.Fade();
 
         NotifyDeath();
         yield return new WaitForSeconds(t);
         StopAllCoroutines();
         Destroy(link);
         Destroy(tail);
-        Destroy(petal);
+        //Destroy(petal);
         Destroy(ps.gameObject);
         Destroy(gameObject);
     }
