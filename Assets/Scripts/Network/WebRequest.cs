@@ -5,16 +5,16 @@ using System;
 //using Newtonsoft.Json;
 
 public class MyWebRequest{
-    string uri;
+    string url;
 
     public MyWebRequest()
     {
-        uri = "http://162.105.86.75:39080";
+        url = "http://162.105.86.75:39080";
     }
 
     public MyWebRequest(string serverUrl)
     {
-        uri = serverUrl;
+        url = serverUrl;
     }
 
     public string GetBestScores(string musicName, int difficulty)
@@ -24,7 +24,35 @@ public class MyWebRequest{
 
     public string Search(string text)
     {
-        return null;
+        string result = string.Empty;
+        HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+        req.Method = "POST";
+        req.TimeOut = "1000";
+        req.ContentType = "application/x-www-form-urlencoded";
+        byte[] PostString = Encoding.UTF8.GetBytes(QuerySong);
+        req.ContentLength = PostString.Length;
+
+        using (Stream reqStream = req.GetRequestStream())
+        {
+            reqStream.Write(PostString, 0, PostString.Length);
+            reqStream.Close();
+        }
+
+        HttpWebResponse resp = (HttpWebResponse)req.GetResponse();
+        if ((int)resp.StatusCode != 200)
+        {
+            return null;
+        }
+
+        Stream stream = resp.GetResponseStream();
+
+        using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+        {
+            result = reader.ReadToEnd();
+            reader.Close();
+        }
+
+        return result;
     }
 
     public bool SignUp(string username, string passwd)
@@ -34,7 +62,40 @@ public class MyWebRequest{
 
     public bool AddRecord(string username, string passwd, string musicName, int difficulty, string rank, int score)
     {
-        return false;
+        /*
+         * 'username=yzs6000&password=yzsyzsyzs&musicname=Yuzuki%20-%20you(Vocal)&difficulty=3&rank=SSS&score=6000'
+         */
+        string result = string.Empty;
+        string queryString = string.Empty;
+        queryString = "username=" + username + "passwd=" + passwd + "musicName=" + musicName + "difficulty=" + difficulty.ToString() + "rank=" + rank + "score=" + score.ToString();
+        HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+        req.Method = "POST";
+        req.TimeOut = "600";
+        req.ContentType = "application/x-www-form-urlencoded";
+        byte[] PostString = Encoding.UTF8.GetBytes(queryString);
+        req.ContentLength = PostString.Length;
+
+        using (Stream reqStream = req.GetRequestStream())
+        {
+            reqStream.Write(PostString, 0, PostString.Length);
+            reqStream.Close();
+        }
+
+        HttpWebResponse resp = (HttpWebResponse)req.GetResponse();
+
+        if ((int)resp.StatusCode != 200)
+        {
+            return false;
+        }
+        Stream stream = resp.GetResponseStream();
+
+        using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+        {
+            result = reader.ReadToEnd();
+            reader.Close();//?
+        }
+
+        return true;
     }
 
     public Byte[] DownloadFile(string url)
@@ -58,7 +119,9 @@ public class JsonUtils
 
     public static List<MusicListItem> ParseSearchResult(string json)
     {
-        return null;
+        List<MusicListItem> musicinfo;
+        musicinfo = JsonConvert.DeserializeObject<List<MusicListItem>>(json);
+        return musicinfo;
     }
 }
 
@@ -67,7 +130,7 @@ public class JsonUtils
 /*
 public string TestSearch(string keyword)
 {
-    HttpWebRequest req = WebRequest.Create(uriStr) as HttpWebRequest;
+    HttpWebRequest req = WebRequest.Create(urlStr) as HttpWebRequest;
     var data = Encoding.Unicode.GetBytes(keyword);
     req.Method = "POST";
     req.ContentType = "application/x-www-form-urlencoded";
@@ -85,8 +148,8 @@ public string TestSearch(string keyword)
 
 public string TestSignup(string username, string passwd)
 {
-    //Uri relativeUri = new Uri("signup", UriKind.Relative);
-    //Uri fullUri = new Uri(serverUri, relativeUri);
+    //url relativeurl = new url("signup", urlKind.Relative);
+    //url fullurl = new url(serverurl, relativeurl);
     HttpWebRequest req = WebRequest.Create("http://162.105.86.75:39080/signup") as HttpWebRequest;
     //var data = Encoding.Unicode.GetBytes("username=" + username + "&password=" + passwd);
     var data = Encoding.Default.GetBytes("username=yzs1000&password=yzsyzsyzs1");
