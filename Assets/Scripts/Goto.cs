@@ -6,7 +6,7 @@ public class Goto : MonoBehaviour
 {
     public void SwitchScene()
     {
-        Debug.Log(GameObject.Find("Canvas/Name").GetComponent<Text>().text+" started!");
-        //switch scene
+        Debug.Log(DegreeSelect.mode+" started!");
+        //chose mode and switch scene
     }
 }

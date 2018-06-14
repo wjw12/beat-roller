@@ -60,8 +60,8 @@ public class MakeButton : MonoBehaviour
 
     public void SetGameStarter(string name)
     {
-        Debug.Log(name + " started!");
-        //switch scene
+        Debug.Log(name + " selected!");
+        //prepare to switch scene
     }
 
     public void Make()
