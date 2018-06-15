@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System;
 
 public class BestScores
 {
@@ -29,12 +30,70 @@ public class MusicDataView : MonoBehaviour {
 		
 	}
 
-    virtual public void SetName(string name) { }
-    virtual public void SetMusician(string musician) { }
-    virtual public void SetImageLink(string link) { }
-    virtual public void SetMusicLink(string link) { }
+    virtual public void SetName(string name) {
+        nameField.text = name;
+    }
+    virtual public void SetMusician(string musician) {
+        musicianField.text = musician;
+    }
 
-    virtual public void SetLevels(LevelData[] levels) {
+    virtual public void SetImageLink(string link) {
+        Debug.LogError("Not implemented.");
+    }
+    virtual public void SetMusicLink(string link) { Debug.LogError("Not implemented."); }
+
+    virtual public void SetLevels(LevelData[] leveldata) {
+        int[] aa = new int[] { -1, -1, -1 };
+        foreach(LevelData d in leveldata)
+        {
+            if (d.Difficulty <= 3)
+            {
+                if (aa[0] < 0)
+                {
+                    aa[0] = d.Difficulty;
+                }
+            }
+            else if (d.Difficulty <= 7)
+            {
+                if (aa[1] < 0)
+                {
+                    aa[1] = d.Difficulty;
+                }
+            }
+            else
+            {
+                if (aa[2] < 0)
+                {
+                    aa[2] = d.Difficulty;
+                }
+            }
+        }
+        int n = 0;
+        foreach (int i in aa)
+            if (i >= 0) n++;
+        levels = new LevelData[n];
+
+        int j = 0;
+        foreach (LevelData d in leveldata)
+        {
+            if (d.Difficulty <= 3 && d.Difficulty == aa[0])
+            {
+                levels[j] = d;
+                j++;
+            }
+            else if (d.Difficulty <= 7 && d.Difficulty == aa[1])
+            {
+                levels[j] = d;
+                j++;
+            }
+            else if (d.Difficulty == aa[2])
+            {
+                levels[j] = d;
+                j++;
+            }
+        }
+        
+
         // download best scores data
 
         // if not null, display best scores

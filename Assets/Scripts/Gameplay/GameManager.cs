@@ -11,7 +11,7 @@ public class GameManager : Singleton<GameManager> {
     float skipTime;
     float currTime = 0f;
     bool hasSkipped = false;
-    bool hasStarted = false;
+    bool isPlaying = false;
     int musicID;
 
 	// Use this for initialization
@@ -28,11 +28,12 @@ public class GameManager : Singleton<GameManager> {
 #endif
         skipTime = touchRing.GetFirstNoteTime() * 0.8f;
         Destroy(minfo.gameObject);
+        isPlaying = true;
 	}
 	
 	// Update is called once per frame
 	void Update () {
-        if (!hasStarted) return;
+        if (!isPlaying) return;
         if (Mathf.FloorToInt(currTime * 1000f) >= ANAMusic.getDuration(musicID)) FinishGame();
         currTime += Time.deltaTime;
         if (!hasSkipped && currTime >= skipTime)
@@ -58,12 +59,14 @@ public class GameManager : Singleton<GameManager> {
         {
             Time.timeScale = 0f;
             ANAMusic.pause(musicID);
+            isPlaying = false;
         }
         else
         {
             // resume
             Time.timeScale = 1f;
             ANAMusic.play(musicID);
+            isPlaying = true;
         }
     }
 
@@ -75,12 +78,13 @@ public class GameManager : Singleton<GameManager> {
         ANAMusic.release(musicID);
 
         // load scene
-        Application.LoadLevel("StartScene");                                                                  
+        Application.LoadLevel("LocalList");                                                                  
     }
 
     // normal finish
     public void FinishGame()
     {
+        isPlaying = false;
         ANAMusic.pause(musicID);
         ANAMusic.release(musicID);
 
@@ -100,13 +104,13 @@ public class GameManager : Singleton<GameManager> {
     void LoadMusicAsync(string path)
     {
         Action<int> cb;
-        cb = delegate (int i) { hasStarted = true; touchRing.SetStart(); ANAMusic.play(musicID); };
+        cb = delegate (int i) { isPlaying = true; touchRing.SetStart(); ANAMusic.play(musicID); };
         musicID = ANAMusic.load(path, usePersistentDataPath : true, loadAsync: true, loadedCallback : cb);
     }
 
     void LoadBackgroundPic(string path)
     {
-        Sprite sp = IMG2Sprite.instance.LoadNewSprite(Application.persistentDataPath + "/" + path);
+        Sprite sp = IMG2Sprite.instance.LoadNewSprite(path);
         if (sp == null) return;
         backgroundImage.sprite = sp;
 

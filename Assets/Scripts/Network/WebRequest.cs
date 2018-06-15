@@ -1,37 +1,78 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Net;
+using System.Text;
 using System;
-//using Newtonsoft.Json;
+using System.IO;
+using Newtonsoft.Json;
 
 public class MyWebRequest{
-    string url;
+    public string url;
+    public string fileUrl;
 
     public MyWebRequest()
     {
-        url = "http://162.105.86.75:39080";
+        url = "http://162.105.86.196:39080";
+        fileUrl = "http://yzs-qingstor.pek3b.qingstor.com/beatroller/";
     }
 
     public MyWebRequest(string serverUrl)
     {
         url = serverUrl;
+        fileUrl = "http://yzs-qingstor.pek3b.qingstor.com/beatroller/";
     }
 
     public string GetBestScores(string musicName, int difficulty)
     {
-        return null;
+        // 'musicname=Yuzuki%20-%20you(Vocal)&difficulty=3'
+
+        string result = string.Empty;
+        string queryString = string.Empty;
+        queryString = "musicname=" + musicName + "&difficulty=" + difficulty.ToString();
+        HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url + "/rank");
+        req.Method = "POST";
+        req.Timeout = 1000;
+        req.ContentType = "application/x-www-form-urlencoded";
+        //req.ContentType = "text/plain";
+        //req.CachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore);
+        byte[] PostString = Encoding.UTF8.GetBytes(queryString);
+        req.ContentLength = PostString.Length;
+
+        using (Stream reqStream = req.GetRequestStream())
+        {
+            reqStream.Write(PostString, 0, PostString.Length);
+            reqStream.Close();
+        }
+
+        HttpWebResponse resp = (HttpWebResponse)req.GetResponse();
+
+        if ((int)resp.StatusCode != 200)
+        {
+            return null;
+        }
+        Stream stream = resp.GetResponseStream();
+
+        using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+        {
+            result = reader.ReadToEnd();
+            reader.Close();//?
+        }
+
+
+        return result;
     }
 
     public string Search(string text)
     {
         string result = string.Empty;
-        HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+        HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url + "/search");
         req.Method = "POST";
-        req.TimeOut = "1000";
-        req.ContentType = "application/x-www-form-urlencoded";
-        byte[] PostString = Encoding.UTF8.GetBytes(QuerySong);
+        req.Timeout = 1000;
+        //req.ContentType = "application/x-www-form-urlencoded";
+        req.ContentType = "text/plain";
+        byte[] PostString = Encoding.UTF8.GetBytes(text);
         req.ContentLength = PostString.Length;
-
+        
         using (Stream reqStream = req.GetRequestStream())
         {
             reqStream.Write(PostString, 0, PostString.Length);
@@ -67,10 +108,10 @@ public class MyWebRequest{
          */
         string result = string.Empty;
         string queryString = string.Empty;
-        queryString = "username=" + username + "passwd=" + passwd + "musicName=" + musicName + "difficulty=" + difficulty.ToString() + "rank=" + rank + "score=" + score.ToString();
-        HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+        queryString = "username=" + username + "&password=" + passwd + "&musicname=" + musicName + "&difficulty=" + difficulty.ToString() + "&rank=" + rank + "&score=" + score.ToString();
+        HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url + "/upload");
         req.Method = "POST";
-        req.TimeOut = "600";
+        req.Timeout = 1000;
         req.ContentType = "application/x-www-form-urlencoded";
         byte[] PostString = Encoding.UTF8.GetBytes(queryString);
         req.ContentLength = PostString.Length;
@@ -94,13 +135,18 @@ public class MyWebRequest{
             result = reader.ReadToEnd();
             reader.Close();//?
         }
+        
 
         return true;
     }
 
-    public Byte[] DownloadFile(string url)
+    public void DownloadFile(string relativeUrl, string destination, DownloadDataCompletedEventHandler completedEventHandler)
     {
-        return null;
+        using (WebClient wc = new WebClient())
+        {
+            wc.DownloadDataCompleted += completedEventHandler;
+            wc.DownloadFileAsync(new Uri(fileUrl + relativeUrl), destination);
+        }
     }
 
 }
@@ -108,6 +154,11 @@ public class MyWebRequest{
 
 public class JsonUtils
 {
+    public class SearchResult
+    {
+        public List<MusicListItem> results;
+    }
+
     public static List<BestScores> ParseBestScores(string json)
     {
         List<BestScores> scoreinfo;
@@ -120,63 +171,9 @@ public class JsonUtils
     public static List<MusicListItem> ParseSearchResult(string json)
     {
         List<MusicListItem> musicinfo;
-        musicinfo = JsonConvert.DeserializeObject<List<MusicListItem>>(json);
+        SearchResult res = JsonConvert.DeserializeObject<SearchResult>(json);
+        //musicinfo = JsonConvert.DeserializeObject<List<MusicListItem>>(json);
+        musicinfo = res.results;
         return musicinfo;
     }
 }
-
-// -------------- the following does not work --------------
-
-/*
-public string TestSearch(string keyword)
-{
-    HttpWebRequest req = WebRequest.Create(urlStr) as HttpWebRequest;
-    var data = Encoding.Unicode.GetBytes(keyword);
-    req.Method = "POST";
-    req.ContentType = "application/x-www-form-urlencoded";
-    req.ContentLength = data.Length;
-
-    using (var stream = req.GetRequestStream()) stream.Write(data, 0, data.Length);
-
-    var response = req.GetResponse();
-
-    var responseStr = new StreamReader(response.GetResponseStream()).ReadToEnd();
-
-    Debug.Log(responseStr);
-    return responseStr;
-}
-
-public string TestSignup(string username, string passwd)
-{
-    //url relativeurl = new url("signup", urlKind.Relative);
-    //url fullurl = new url(serverurl, relativeurl);
-    HttpWebRequest req = WebRequest.Create("http://162.105.86.75:39080/signup") as HttpWebRequest;
-    //var data = Encoding.Unicode.GetBytes("username=" + username + "&password=" + passwd);
-    var data = Encoding.Default.GetBytes("username=yzs1000&password=yzsyzsyzs1");
-    req.Method = "post";
-    req.ContentType = "application/x-www-form-urlencoded";
-    req.Headers["cache-control"] = "no-cache";
-    req.ContentLength = data.Length;
-    req.KeepAlive = false;
-
-    using (var stream = req.GetRequestStream())
-    {
-        stream.Write(data, 0, data.Length);
-        stream.Close();
-    }
-
-    //using (var response = (HttpWebResponse) await req.GetRes)
-    try
-    {
-        var response = req.GetResponse() as HttpWebResponse;
-        var responseStr = new StreamReader(response.GetResponseStream()).ReadToEnd();
-        Debug.Log(responseStr);
-        return responseStr;
-    }
-    catch (WebException e)
-    {
-        Debug.Log(e.Status.ToString());
-        return null;
-    }
-}
-*/

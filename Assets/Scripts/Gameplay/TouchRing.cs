@@ -283,7 +283,7 @@ public class TouchRing : MonoBehaviour {
     {
         musicMap = new List<NoteDescriptor>();
 
-        StreamReader file = new StreamReader(Application.persistentDataPath + "/" + path);
+        StreamReader file = new StreamReader(path);
 
         //TextAsset t = Resources.Load(path) as TextAsset;
         //var arrayString = t.text.Split('\n');

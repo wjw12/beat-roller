@@ -4,10 +4,12 @@ using UnityEngine;
 
 public class WebController : MonoBehaviour {
     MusicListView view;
+    MyWebRequest req;
 
 	// Use this for initialization
 	void Start () {
         view = FindObjectOfType<MusicListView>();
+        req = new MyWebRequest();
 	}
 	
 	// Update is called once per frame
@@ -17,13 +19,20 @@ public class WebController : MonoBehaviour {
 
     public void Search(string keyword)
     {
-        // send http request
+        view.Clear();
+        string res = req.Search(keyword);
 
-        // get response
+        if (res != null)
+        {
+            List<MusicListItem> musicItems = JsonUtils.ParseSearchResult(res);
 
-        // parse json
+            if (musicItems != null && musicItems.Count > 0)
+            {
+                view.AddMusic(musicItems);
+            }
+        }
 
-        // call view.AddMusic()
+        view.Refresh();
     }
 
 }

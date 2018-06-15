@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.IO;
 
 public class MusicListItem
 {
@@ -17,6 +18,8 @@ public class LevelData
     public int Difficulty { get; set; }
     public string MapLink { get; set; } // http link or path
 }//
+
+
 
 public class MusicListView : MonoBehaviour {
     public GameObject buttonPrefab;
@@ -37,17 +40,19 @@ public class MusicListView : MonoBehaviour {
 		
 	}
 
-    public void AddMusic(string name, string musician, string imgPath, string musicPath, LevelData[] levels)
-    {
-        // to be implemented
+   
 
-        // items.Add(.....)
-        
+    public void AddMusic(MusicListItem musicListItem)
+    {
+        items.Add(musicListItem);
     }
 
     public void AddMusic(List<MusicListItem> musicList)
     {
-
+        foreach (var i in musicList)
+        {
+            AddMusic(i);
+        }
     }
 
     public void Clear()
@@ -56,27 +61,36 @@ public class MusicListView : MonoBehaviour {
         {
             DestroyImmediate(parentTransform.GetChild(0).gameObject);
         }
+        items = new List<MusicListItem>();
     }
 
     public void Refresh()
     {
-        Clear();
         for (int i = 0; i < items.Count; i++)
         {
+            //float x = parentTransform.GetComponent<RectTransform>().sizeDelta.x;
+            //float y = parentTransform.GetComponent<RectTransform>().sizeDelta.y;
+            //parentTransform.GetComponent<RectTransform>().sizeDelta = new Vector2(x, y + 40);
+
             GameObject button = Instantiate(buttonPrefab, parentTransform);
             Text text = button.transform.Find("Music Name").GetComponent<Text>();
             text.text = items[i].Name;
 
             text = button.transform.Find("Musician").GetComponent<Text>();
             text.text = items[i].Musician;
-            
+
+            string name = items[i].Name;
+            string musician = items[i].Musician;
+            string musicLink = items[i].MusicLink;
+            string imgLink = items[i].ImgLink;
+            LevelData[] levels = items[i].leveldata;
             button.GetComponent<Button>().onClick.AddListener(delegate ()
             {
-                dataView.SetName(items[i].Name);
-                dataView.SetMusician(items[i].Musician);
-                dataView.SetMusicLink(items[i].MusicLink);
-                dataView.SetImageLink(items[i].ImgLink);
-                dataView.SetLevels(items[i].leveldata);
+                dataView.SetName(name);
+                dataView.SetMusician(musician);
+                dataView.SetMusicLink(musicLink);
+                dataView.SetImageLink(imgLink);
+                dataView.SetLevels(levels);
             }
                 );
         }

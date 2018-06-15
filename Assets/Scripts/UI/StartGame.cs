@@ -26,7 +26,7 @@ public class StartGame : MonoBehaviour {
 
     public IEnumerator LoadGameScene()
     {
-        AsyncOperation async = Application.LoadLevelAsync("prototype");
+        AsyncOperation async = Application.LoadLevelAsync("Main");
         yield return async;
     }
 }

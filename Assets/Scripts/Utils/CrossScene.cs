@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class CrossScene : MonoBehaviour {
-    public static bool isClone;
+    bool isClone = false;
     public GameObject obj;
     private GameObject cloneObj;
 
